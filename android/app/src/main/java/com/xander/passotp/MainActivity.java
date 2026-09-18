@@ -35,19 +35,20 @@ public class MainActivity extends Activity {
     }
 
     @Override public void onCreate(Bundle b) { super.onCreate(b); prefs=getSharedPreferences("passotp",MODE_PRIVATE); showUnlock(); }
-    TextView text(String value, float size) { TextView v=new TextView(this); v.setText(value); v.setTextSize(size); v.setTextColor(Color.rgb(24,34,48)); v.setPadding(0,6,0,6); return v; }
+    int dp(float value){return (int)(value*getResources().getDisplayMetrics().density+0.5f);}
+    TextView text(String value, float size) { TextView v=new TextView(this); v.setText(value); v.setTextSize(size); v.setTextColor(Color.rgb(24,34,48)); v.setPadding(0,dp(5),0,dp(5)); return v; }
     GradientDrawable shape(int color,int radius,int stroke){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius);if(stroke>0)d.setStroke(1,stroke);return d;}
-    Button button(String value) { Button b=new Button(this); b.setText(value); b.setAllCaps(false); b.setTextSize(12); b.setTextColor(Color.WHITE); b.setMinHeight(44); b.setPadding(14,0,14,0); b.setBackground(shape(Color.rgb(36,99,235),12,0)); return b; }
-    Button softButton(String value) { Button b=button(value); b.setTextColor(Color.rgb(51,65,85)); b.setBackground(shape(Color.rgb(231,235,242),12,0)); return b; }
-    EditText input(String hint, boolean secret) { EditText e=new EditText(this); e.setHint(hint); e.setTextSize(14); e.setSingleLine(false); e.setPadding(14,8,14,8); e.setBackground(shape(Color.WHITE,12,Color.rgb(203,211,223))); if(secret) e.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD); return e; }
-    void base() { root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(22,20,22,14); root.setBackgroundColor(Color.rgb(246,248,251)); setContentView(root); }
+    Button button(String value) { Button b=new Button(this); b.setText(value); b.setAllCaps(false); b.setTextSize(12); b.setTextColor(Color.WHITE); b.setMinHeight(dp(44)); b.setPadding(dp(12),0,dp(12),0); b.setBackground(shape(Color.rgb(36,99,235),dp(12),0)); return b; }
+    Button softButton(String value) { Button b=button(value); b.setTextColor(Color.rgb(51,65,85)); b.setBackground(shape(Color.rgb(231,235,242),dp(12),0)); return b; }
+    EditText input(String hint, boolean secret) { EditText e=new EditText(this); e.setHint(hint); e.setTextSize(14); e.setSingleLine(false); e.setPadding(dp(14),dp(8),dp(14),dp(8)); e.setBackground(shape(Color.WHITE,dp(12),Color.rgb(203,211,223))); if(secret) e.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD); return e; }
+    void base() { root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(20),dp(18),dp(20),dp(14)); root.setBackgroundColor(Color.rgb(247,248,252)); setContentView(root); }
 
     void showUnlock() {
         base(); TextView title=text("PassOTP",30); title.setTypeface(null,1); root.addView(title); TextView subtitle=text("本地密码 OTP 保险库",14); subtitle.setTextColor(Color.rgb(104,115,133)); root.addView(subtitle);
-        unlockInput=input("主密码",true); root.addView(unlockInput,new LinearLayout.LayoutParams(-1,58));
-        Button unlock=button("解锁"); LinearLayout.LayoutParams unlockParams=new LinearLayout.LayoutParams(-1,50);unlockParams.topMargin=12;root.addView(unlock,unlockParams); TextView error=text("",12); error.setTextColor(Color.rgb(198,40,40)); root.addView(error);
+        unlockInput=input("主密码",true); LinearLayout.LayoutParams inputParams=new LinearLayout.LayoutParams(-1,dp(54));inputParams.topMargin=dp(22);root.addView(unlockInput,inputParams);
+        Button unlock=button("解锁"); LinearLayout.LayoutParams unlockParams=new LinearLayout.LayoutParams(-1,dp(50));unlockParams.topMargin=dp(12);root.addView(unlock,unlockParams); TextView error=text("",12); error.setTextColor(Color.rgb(198,40,40)); root.addView(error);
         BiometricManager biometricManager=Build.VERSION.SDK_INT>=29?(BiometricManager)getSystemService(BIOMETRIC_SERVICE):null;
-        Button biometric=softButton("使用生物识别解锁");root.addView(biometric,new LinearLayout.LayoutParams(-1,48)); biometric.setOnClickListener(v->{if(biometricManager==null){error.setText("当前 Android 版本不支持生物识别");return;}if(prefs.getString("session_key",null)==null){error.setText("请先使用主密码解锁一次");return;}if(prefs.getLong("session_until",0)<=System.currentTimeMillis()){error.setText("会话已过期，请先使用主密码解锁");return;}if(biometricManager.canAuthenticate()!=BiometricManager.BIOMETRIC_SUCCESS){error.setText("请先在系统设置中录入指纹或面容");return;}biometricUnlock(error);});
+        Button biometric=softButton("使用生物识别解锁");LinearLayout.LayoutParams biometricParams=new LinearLayout.LayoutParams(-1,dp(48));biometricParams.topMargin=dp(8);root.addView(biometric,biometricParams); biometric.setOnClickListener(v->{if(biometricManager==null){error.setText("当前 Android 版本不支持生物识别");return;}if(prefs.getString("session_key",null)==null){error.setText("请先使用主密码解锁一次");return;}if(prefs.getLong("session_until",0)<=System.currentTimeMillis()){error.setText("会话已过期，请先使用主密码解锁");return;}if(biometricManager.canAuthenticate()!=BiometricManager.BIOMETRIC_SUCCESS){error.setText("请先在系统设置中录入指纹或面容");return;}biometricUnlock(error);});
         unlock.setOnClickListener(v->{ try { unlock(unlockInput.getText().toString()); } catch(Exception e){ error.setText("主密码不正确或保险库损坏"); } });
         unlockInput.setOnEditorActionListener((v,a,event)->{unlock.performClick();return true;});
     }
@@ -71,23 +72,24 @@ public class MainActivity extends Activity {
 
     void showHome() {
         base(); LinearLayout header=new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL); TextView title=text("PassOTP",24); title.setTypeface(null,1); header.addView(title,new LinearLayout.LayoutParams(0,-2,1)); Button lock=softButton("锁定"); header.addView(lock); root.addView(header);
-        LinearLayout tools=new LinearLayout(this); tools.setGravity(Gravity.CENTER_VERTICAL); CheckBox filter=new CheckBox(this); filter.setText("仅显示 OTP"); filter.setChecked(otpOnly); tools.addView(filter,new LinearLayout.LayoutParams(0,-2,1)); Button add=button("新增"); tools.addView(add); Button settings=button("导入/导出"); tools.addView(settings); root.addView(tools);
-        LinearLayout systemTools=new LinearLayout(this); Button autofill=softButton("启用系统自动填充"); systemTools.addView(autofill); root.addView(systemTools);
+        TextView subtitle=text("本地密码与 OTP",12); subtitle.setTextColor(Color.rgb(104,115,133)); root.addView(subtitle);
+        LinearLayout tools=new LinearLayout(this); tools.setGravity(Gravity.CENTER_VERTICAL); CheckBox filter=new CheckBox(this); filter.setText("OTP"); filter.setTextSize(12); filter.setPadding(0,0,0,0); filter.setChecked(otpOnly); tools.addView(filter,new LinearLayout.LayoutParams(0,dp(48),1)); Button add=button("新增"); LinearLayout.LayoutParams addParams=new LinearLayout.LayoutParams(dp(74),dp(44));addParams.setMargins(dp(6),dp(2),0,dp(2));tools.addView(add,addParams); Button settings=softButton("数据"); LinearLayout.LayoutParams settingsParams=new LinearLayout.LayoutParams(dp(74),dp(44));settingsParams.setMargins(dp(6),dp(2),0,dp(2));tools.addView(settings,settingsParams); root.addView(tools);
+        LinearLayout systemTools=new LinearLayout(this); Button autofill=softButton("启用系统自动填充"); systemTools.addView(autofill,new LinearLayout.LayoutParams(-1,dp(42))); root.addView(systemTools);
         filter.setOnCheckedChangeListener((b,c)->{otpOnly=c; renderList();}); add.setOnClickListener(v->edit(null)); settings.setOnClickListener(v->showDataMenu()); autofill.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE, Uri.parse("package:"+getPackageName())));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}}); lock.setOnClickListener(v->{key=null;entries.clear();prefs.edit().remove("session_key").remove("session_until").apply();showUnlock();});
-        ScrollView scroll=new ScrollView(this); list=new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); scroll.addView(list); root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1)); renderList();
+        ScrollView scroll=new ScrollView(this); list=new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); list.setPadding(0,dp(8),0,dp(16)); scroll.addView(list); root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1)); renderList();
         handler.removeCallbacksAndMessages(null); handler.postDelayed(new Runnable(){public void run(){updateOtpViews();handler.postDelayed(this,1000);}},500);
     }
 
     void renderList() {
         if(list==null)return; list.removeAllViews(); otpViews.clear();
-        for(Entry e:entries) { if(otpOnly && e.otp.isEmpty()) continue; LinearLayout card=new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(14,10,14,10); card.setBackground(shape(Color.WHITE,14,Color.rgb(221,226,234))); LinearLayout.LayoutParams cardParams=new LinearLayout.LayoutParams(-1,-2);cardParams.setMargins(0,0,0,8);
+        for(Entry e:entries) { if(otpOnly && e.otp.isEmpty()) continue; LinearLayout card=new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(14),dp(10),dp(14),dp(10)); card.setBackground(shape(Color.WHITE,dp(14),Color.rgb(221,226,234))); LinearLayout.LayoutParams cardParams=new LinearLayout.LayoutParams(-1,-2);cardParams.setMargins(0,0,0,dp(8));
             LinearLayout top=new LinearLayout(this); TextView name=text(e.name.isEmpty()?"未命名":e.name,15); name.setTypeface(null,1); top.addView(name,new LinearLayout.LayoutParams(0,-2,1)); TextView code=text(e.otp.isEmpty()?"":"------",18); code.setTextColor(Color.rgb(23,105,170)); top.addView(code); card.addView(top); otpViews.add(code);
-            TextView user=text(e.username,13); user.setTextColor(Color.rgb(104,115,133)); card.addView(user); LinearLayout actions=new LinearLayout(this); Button copyUser=softButton("复制账号"), copyPass=softButton("复制密码"), copyOtp=softButton("复制 OTP"), edit=button("编辑"); actions.addView(copyUser); actions.addView(copyPass); if(!e.otp.isEmpty())actions.addView(copyOtp); actions.addView(edit); card.addView(actions); list.addView(card,cardParams);
+            TextView user=text(e.username,13); user.setTextColor(Color.rgb(104,115,133)); card.addView(user); LinearLayout actions=new LinearLayout(this); Button copyUser=softButton("账号"), copyPass=softButton("密码"), copyOtp=softButton("OTP"), edit=button("编辑"); addAction(actions,copyUser); addAction(actions,copyPass); if(!e.otp.isEmpty())addAction(actions,copyOtp); addAction(actions,edit); card.addView(actions); list.addView(card,cardParams);
             copyUser.setOnClickListener(v->copy(e.username)); copyPass.setOnClickListener(v->copy(e.password)); copyOtp.setOnClickListener(v->{try{copy(totp(e));}catch(Exception ignored){}}); edit.setOnClickListener(v->edit(e));
-            View divider=new View(this); divider.setBackgroundColor(Color.rgb(220,225,232)); list.addView(divider,new LinearLayout.LayoutParams(-1,1));
         }
         if(list.getChildCount()==0) list.addView(text(otpOnly?"暂无 OTP 项目":"暂无数据",14)); updateOtpViews();
     }
+    void addAction(LinearLayout row,Button b){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(38),1);p.setMargins(dp(3),dp(4),dp(3),0);row.addView(b,p);}
     void updateOtpViews(){int i=0; for(Entry e:entries){if(otpOnly&&e.otp.isEmpty())continue; if(i>=otpViews.size())break; try{otpViews.get(i++).setText(e.otp.isEmpty()?"":totp(e));}catch(Exception ignored){}}}
     void copy(String value){((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("PassOTP",value==null?"":value)); Toast.makeText(this,"已复制",Toast.LENGTH_SHORT).show();}
 
