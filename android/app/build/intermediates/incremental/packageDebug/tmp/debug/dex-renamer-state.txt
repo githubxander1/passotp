@@ -1,7 +1,0 @@
-#Fri Sep 18 19:59:33 CST 2026
-base.0=C\:\\Users\\HQ\\Documents\\Codex\\2026-07-20\\ok-2\\password-otp-manager\\android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
-base.1=C\:\\Users\\HQ\\Documents\\Codex\\2026-07-20\\ok-2\\password-otp-manager\\android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\1\\classes.dex
-path.0=0/classes.dex
-path.1=1/classes.dex
-renamed.0=classes.dex
-renamed.1=classes2.dex
