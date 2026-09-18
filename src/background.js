@@ -71,9 +71,15 @@ async function handleLoginMessage(message, sender) {
 
 async function syncStoredWebdav() {
   const { stored, key, entries } = await getUnlockedVault();
-  const configRecord = await chrome.storage.local.get("webdavConfig");
-  if (!configRecord.webdavConfig) return { synced: 0 };
-  const rawConfig = await decryptRecord(configRecord.webdavConfig, key);
+  const configRecord = await chrome.storage.local.get(["webdavConfigStandalone", "webdavConfig"]);
+  if (!configRecord.webdavConfigStandalone && !configRecord.webdavConfig) return { synced: 0 };
+  let rawConfig;
+  if (configRecord.webdavConfigStandalone) {
+    const configKey = await crypto.subtle.importKey("raw", b64ToBytes(configRecord.webdavConfigStandalone.key), { name: "AES-GCM" }, false, ["decrypt"]);
+    rawConfig = await decryptRecord(configRecord.webdavConfigStandalone.record, configKey);
+  } else {
+    rawConfig = await decryptRecord(configRecord.webdavConfig, key);
+  }
   const config = rawConfig.url ? { primary: rawConfig, secondary: {} } : rawConfig;
   const targets = [config.primary, config.secondary].filter((target) => target?.url);
   let localEntries = entries;
