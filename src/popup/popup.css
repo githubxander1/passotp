@@ -1,0 +1,62 @@
+:root { color-scheme: light; font: 13px system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { width: 320px; max-height: 460px; overflow: hidden; margin: 0; color: #182230; background: #f6f8fb; }
+.settingsPage { width: min(760px, 100vw); }
+.settingsPage main { max-width: 720px; margin: 0 auto; }
+main { padding: 14px; }
+header, .toolbar, .inline, .formActions { display: flex; align-items: center; gap: 8px; }
+header { justify-content: space-between; margin-bottom: 14px; }
+.headerActions { display: flex; gap: 5px; }
+.otpToggle { display: inline-flex; align-items: center; gap: 2px; margin: 0; color: #334155; font-size: 11px; font-weight: 700; }
+.otpToggle input { width: auto; margin: 0; }
+.subHeader { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; margin-bottom: 10px; }
+.subHeader h1 { text-align: center; }
+.subHeader p { text-align: center; }
+.editView, .settingsView { max-height: 430px; overflow-y: auto; scrollbar-width: none; }
+h1 { margin: 0; font-size: 18px; }
+p { margin: 3px 0 0; color: #687385; font-size: 11px; }
+label { display: block; margin: 10px 0 5px; font-weight: 600; }
+input, select, textarea { width: 100%; border: 1px solid #cbd3df; border-radius: 5px; padding: 7px 8px; background: #fff; color: inherit; }
+textarea { min-height: 30px; resize: none; overflow-y: hidden; line-height: 1.45; }
+button { border: 0; border-radius: 5px; padding: 8px 11px; background: #2463eb; color: #fff; cursor: pointer; font-weight: 600; }
+button.secondary { background: #e7ebf2; color: #334155; }
+button.danger { background: #d92d20; color: #fff; }
+#unlockButton { width: 100%; margin-top: 13px; }
+.toolbar { margin-bottom: 10px; }
+.settingsTools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.checkRow { display: flex; align-items: center; gap: 7px; font-weight: 400; }
+.checkRow input { width: auto; }
+.fileButton { display: inline-block; cursor: pointer; }
+.fileButton input { display: none; }
+.toolbar input { flex: 1; }
+.entries { display: grid; gap: 3px; max-height: 390px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #aab4c2 transparent; }
+.settingsView::-webkit-scrollbar, .editView::-webkit-scrollbar { display: none; }
+.entries::-webkit-scrollbar { width: 5px; }
+.entries::-webkit-scrollbar-thumb { background: #aab4c2; border-radius: 4px; }
+.entry { border: 1px solid #d9e0e9; border-radius: 4px; padding: 5px 6px; background: #fff; min-width: 0; }
+.entryTop { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: start; gap: 5px; min-width: 0; }
+.entryName { font-weight: 400; font-size: 11px; color: #687385; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entryTop .edit { position: static; padding: 3px 5px; font-size: 10px; white-space: nowrap; }
+.entryMeta { color: #182230; font-size: 13px; font-weight: 700; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.otpWrap { min-width: 56px; text-align: right; }
+.otpCode { color: #1769aa; font: 700 16px ui-monospace, monospace; letter-spacing: 1px; white-space: nowrap; }
+.otpTimer { color: #7b8798; font-size: 11px; }
+.entryActions { display: flex; gap: 3px; margin-top: 4px; }
+.entryActions button { flex: 0 0 auto; padding: 3px 5px; font-size: 10px; }
+.entryNotes { margin-top: 3px; color: #687385; font-size: 10px; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+.editor { border-top: 1px solid #d9e0e9; margin-top: 12px; padding-top: 5px; }
+.inline input { flex: 1; }
+.passwordToggle { flex: 0 0 auto; padding: 6px 7px; font-size: 10px; }
+.formActions { margin-top: 14px; }
+.formActions button { flex: 1; }
+.hint { color: #7b8798; font-size: 11px; font-weight: 400; }
+.error { color: #c62828; min-height: 16px; }
+.hidden { display: none !important; }
+.empty { padding: 18px 0; text-align: center; color: #7b8798; }
+.panel { border-top: 1px solid #d9e0e9; margin-top: 12px; padding-top: 8px; }
+.scanner { margin: 8px 0; }
+.panel h2 { font-size: 14px; margin: 0 0 8px; }
+#scanVideo { width: 100%; max-height: 190px; background: #111; object-fit: cover; }
+#scanFile { margin: 7px 0; }
+.scanRegion { margin-top: 8px; border: 1px solid #cbd3df; background: #20252d; padding: 5px; }
+#scanCanvas { display: block; width: 100%; max-height: 260px; object-fit: contain; cursor: crosshair; touch-action: none; }

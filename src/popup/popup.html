@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>本地密码库</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header id="appHeader" class="hidden">
+      <div class="headerActions"><label class="otpToggle"><input id="homePasswordFilter" type="checkbox">密码</label><label class="otpToggle"><input id="homeOtpFilter" type="checkbox">otp</label><button id="lockButton" class="secondary hidden" title="锁定">🔒</button><button id="settingsButton" class="secondary hidden">设置</button></div>
+    </header>
+
+    <section id="unlockView">
+      <label for="masterPassword">主密码</label>
+      <input id="masterPassword" type="password" autocomplete="current-password">
+      <button id="unlockButton">解锁</button>
+      <p id="unlockError" class="error"></p>
+    </section>
+
+    <section id="vaultView" class="view hidden">
+      <div class="toolbar">
+        <input id="search" placeholder="搜索名称或用户名">
+        <button id="addButton">新增</button>
+      </div>
+      <div id="entries" class="entries"></div>
+    </section>
+    <section id="editView" class="view hidden">
+      <header class="subHeader"><button id="editBackButton" class="secondary">返回</button><div><h1>编辑项目</h1><p>本地密码库 0.9.7</p></div><span></span></header>
+      <form id="entryForm" class="editor">
+        <input id="entryId" type="hidden">
+        <label>名称<input id="entryName" required></label>
+        <label>网站<input id="entryUrl" type="url" placeholder="https://example.com"></label>
+        <label>用户名<input id="entryUsername" autocomplete="username"></label>
+        <label>密码<div class="inline"><input id="entryPassword" type="password" autocomplete="new-password"><button type="button" id="togglePassword" class="secondary">显示</button><button type="button" id="generateButton" class="secondary">生成</button></div></label>
+        <label>备注<textarea id="entryNotes" rows="1" placeholder="可选备注"></textarea></label>
+        <label>OTP 密钥 <span class="hint">Base32 或 otpauth:// URI</span><input id="entryOtp" autocapitalize="characters"></label>
+        <label>OTP 算法<select id="entryAlgorithm"><option>SHA1</option><option>SHA256</option><option>SHA512</option></select></label>
+        <label>OTP 位数<select id="entryDigits"><option value="6">6 位</option><option value="8">8 位</option></select></label>
+        <label>OTP 周期（秒）<input id="entryPeriod" type="number" min="1" max="300" value="30"></label>
+        <div class="formActions"><button type="submit">保存</button><button type="button" id="cancelButton" class="secondary">取消</button><button type="button" id="deleteButton" class="danger hidden">删除此条目</button></div>
+      </form>
+    </section>
+    <section id="settingsView" class="view hidden">
+      <header class="subHeader"><button id="backButton" class="secondary">返回</button><div><h1>设置</h1><p>本地密码库 0.9.7</p></div><span></span></header>
+      <section class="panel">
+        <h2>主密码</h2>
+        <label>当前主密码<div class="inline"><input id="currentMasterPassword" type="password" autocomplete="current-password"><button type="button" id="toggleCurrentMaster" class="secondary passwordToggle">显示</button></div></label>
+        <p class="hint">当前主密码不会保存，显示按钮只显示本次输入的内容。</p>
+        <label>新主密码<div class="inline"><input id="newMasterPassword" type="password" autocomplete="new-password"><button type="button" id="toggleNewMaster" class="secondary passwordToggle">显示</button></div></label>
+        <label>确认新主密码<div class="inline"><input id="confirmMasterPassword" type="password" autocomplete="new-password"><button type="button" id="toggleConfirmMaster" class="secondary passwordToggle">显示</button></div></label>
+        <button id="changeMasterPassword">修改主密码</button>
+        <p id="masterPasswordMessage" class="hint"></p>
+      </section>
+      <section class="panel">
+        <h2>扫码添加</h2>
+        <div class="settingsTools"><button id="scanTabButton">扫描当前标签页</button><button id="scanRegionButton" class="secondary">框选区域</button><button id="scanCameraButton" class="secondary">摄像头</button><label class="fileButton secondary">图片<input id="scanFile" type="file" accept="image/*"></label></div>
+        <video id="scanVideo" class="hidden" autoplay playsinline></video>
+        <div id="scanRegion" class="scanRegion hidden"><canvas id="scanCanvas"></canvas><div class="settingsTools"><button id="scanRegionConfirm">识别选区</button><button id="scanRegionCancel" class="secondary">取消</button></div></div>
+        <p id="scanMessage" class="hint">可扫描当前标签页中的二维码，也可导入二维码图片。</p>
+        <button id="stopScanButton" class="secondary hidden">停止扫描</button>
+      </section>
+      <section class="panel">
+        <h2>导入与导出</h2>
+        <div class="settingsTools"><button id="exportButton">导出保险库</button><label class="fileButton secondary">导入保险库<input id="vaultFile" type="file" accept="application/json,.json"></label><label class="fileButton secondary">导入 Authenticator<input id="authFile" type="file" accept="text/plain,.txt"></label></div>
+      </section>
+      <section class="panel">
+        <h2>WebDAV 主库</h2>
+        <label>地址<input id="webdavUrl" placeholder="https://dav.example.com/vault.json"></label>
+        <label>用户名<input id="webdavUsername" autocomplete="username"></label>
+        <label>密码<div class="inline"><input id="webdavPassword" type="password" autocomplete="current-password"><button type="button" id="toggleWebdavPassword" class="secondary passwordToggle">显示</button></div></label>
+      </section>
+      <section class="panel">
+        <h2>WebDAV 备用库</h2>
+        <label>地址<input id="webdav2Url" placeholder="https://dav.example.com/backup.json"></label>
+        <label>用户名<input id="webdav2Username" autocomplete="username"></label>
+        <label>密码<div class="inline"><input id="webdav2Password" type="password" autocomplete="current-password"><button type="button" id="toggleWebdav2Password" class="secondary passwordToggle">显示</button></div></label>
+        <p class="hint">两个库会分别同步；一个不可用时不会阻断另一个。</p>
+        <div class="formActions"><button id="saveWebdav">保存</button><button id="webdavSync">同步</button><button id="onedriveButton" type="button" class="secondary">OneDrive</button></div>
+        <p id="syncMessage" class="hint"></p>
+      </section>
+    </section>
+  </main>
+  <script src="../vendor/jsQR.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
