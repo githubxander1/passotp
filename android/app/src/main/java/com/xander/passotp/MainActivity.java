@@ -5,6 +5,9 @@ import android.content.*;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.*;
+import android.provider.Settings;
+import android.hardware.biometrics.BiometricManager;
+import android.hardware.biometrics.BiometricPrompt;
 import android.text.InputType;
 import android.view.*;
 import android.widget.*;
@@ -40,22 +43,34 @@ public class MainActivity extends Activity {
         base(); root.addView(text("PassOTP",26)); root.addView(text("本地密码 OTP 保险库",14));
         unlockInput=input("主密码",true); root.addView(unlockInput,new LinearLayout.LayoutParams(-1,58));
         Button unlock=button("解锁"); root.addView(unlock); TextView error=text("",12); error.setTextColor(Color.rgb(198,40,40)); root.addView(error);
+        BiometricManager biometricManager=Build.VERSION.SDK_INT>=29?(BiometricManager)getSystemService(BIOMETRIC_SERVICE):null;
+        if(biometricManager!=null && prefs.getString("session_key",null)!=null && prefs.getLong("session_until",0)>System.currentTimeMillis() && biometricManager.canAuthenticate()==BiometricManager.BIOMETRIC_SUCCESS){Button biometric=button("使用生物识别解锁");root.addView(biometric);biometric.setOnClickListener(v->biometricUnlock(error));}
         unlock.setOnClickListener(v->{ try { unlock(unlockInput.getText().toString()); } catch(Exception e){ error.setText("主密码不正确或保险库损坏"); } });
         unlockInput.setOnEditorActionListener((v,a,event)->{unlock.performClick();return true;});
     }
+
+    void biometricUnlock(TextView error){
+        if(Build.VERSION.SDK_INT<28)return;
+        BiometricPrompt prompt=new BiometricPrompt.Builder(this).setTitle("解锁 PassOTP").setSubtitle("使用设备生物识别解锁本次会话").setNegativeButton("使用主密码",getMainExecutor(),(d,w)->{}).build();
+        prompt.authenticate(new CancellationSignal(),getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){@Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result){try{unlockFromSession();}catch(Exception e){error.setText("会话密钥已失效，请使用主密码");}}@Override public void onAuthenticationError(int code,CharSequence message){error.setText(message);}});
+    }
+    void unlockFromSession() throws Exception {String raw=prefs.getString("session_key",null);if(raw==null||prefs.getLong("session_until",0)<System.currentTimeMillis())throw new Exception();key=new SecretKeySpec(b64d(raw),"AES");salt=b64d(prefs.getString("salt",""));entries.clear();String savedVault=prefs.getString("vault",null);if(savedVault!=null){JSONArray array=new JSONArray(new String(decrypt(new JSONObject(savedVault),key),StandardCharsets.UTF_8));for(int i=0;i<array.length();i++)entries.add(Entry.from(array.getJSONObject(i)));}showHome();}
 
     void unlock(String password) throws Exception {
         if(password.length()<8) throw new Exception("short");
         String savedSalt=prefs.getString("salt",null), savedVault=prefs.getString("vault",null);
         salt=savedSalt==null?random(16):b64d(savedSalt); key=derive(password,salt);
         entries.clear(); if(savedVault!=null) { JSONArray array=new JSONArray(new String(decrypt(new JSONObject(savedVault),key),StandardCharsets.UTF_8)); for(int i=0;i<array.length();i++) entries.add(Entry.from(array.getJSONObject(i))); }
-        if(savedSalt==null) saveVault(); showHome();
+        if(savedSalt==null) saveVault();
+        prefs.edit().putString("session_key",b64(key.getEncoded())).putLong("session_until",System.currentTimeMillis()+30*60*1000L).apply();
+        showHome();
     }
 
     void showHome() {
         base(); LinearLayout header=new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL); TextView title=text("PassOTP",22); header.addView(title,new LinearLayout.LayoutParams(0,-2,1)); Button lock=button("锁定"); header.addView(lock); root.addView(header);
         LinearLayout tools=new LinearLayout(this); tools.setGravity(Gravity.CENTER_VERTICAL); CheckBox filter=new CheckBox(this); filter.setText("仅显示 OTP"); filter.setChecked(otpOnly); tools.addView(filter,new LinearLayout.LayoutParams(0,-2,1)); Button add=button("新增"); tools.addView(add); Button settings=button("导入/导出"); tools.addView(settings); root.addView(tools);
-        filter.setOnCheckedChangeListener((b,c)->{otpOnly=c; renderList();}); add.setOnClickListener(v->edit(null)); settings.setOnClickListener(v->showDataMenu()); lock.setOnClickListener(v->{key=null;entries.clear();showUnlock();});
+        LinearLayout systemTools=new LinearLayout(this); Button autofill=button("启用系统自动填充"); systemTools.addView(autofill); root.addView(systemTools);
+        filter.setOnCheckedChangeListener((b,c)->{otpOnly=c; renderList();}); add.setOnClickListener(v->edit(null)); settings.setOnClickListener(v->showDataMenu()); autofill.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE, Uri.parse("package:"+getPackageName())));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}}); lock.setOnClickListener(v->{key=null;entries.clear();prefs.edit().remove("session_key").remove("session_until").apply();showUnlock();});
         ScrollView scroll=new ScrollView(this); list=new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); scroll.addView(list); root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1)); renderList();
         handler.removeCallbacksAndMessages(null); handler.postDelayed(new Runnable(){public void run(){updateOtpViews();handler.postDelayed(this,1000);}},500);
     }

@@ -47,7 +47,7 @@ OneDrive 需要单独注册 Microsoft OAuth 应用并配置客户端 ID，不能
 
 ## Android 客户端
 
-Android 客户端位于 `android/`，可使用 Android Studio 打开该目录。它复用扩展的 PBKDF2 + AES-GCM 保险库格式，可以导入扩展导出的加密 JSON。Android 端当前为 `0.1.0`，已支持本地解锁、账号/OTP 管理、复制和加密导入导出；WebDAV 和系统级自动填充将在后续版本加入。
+Android 客户端位于 `android/`，可使用 Android Studio 打开该目录。它复用扩展的 PBKDF2 + AES-GCM 保险库格式，可以导入扩展导出的加密 JSON。Android 端当前为 `0.2.0`，已支持本地解锁、账号/OTP 管理、复制、加密导入导出、生物识别解锁入口和 Android Autofill Service；WebDAV 同步将在后续版本加入。
 
 ## 项目结构
 

@@ -14,6 +14,6 @@
 
 在 Android Studio 中选择本目录下的 `android` 文件夹打开，等待 Gradle 同步后运行 `app`。
 
-当前 Android 客户端版本：`0.1.0`。
+当前 Android 客户端版本：`0.2.0`。
 
-第一版暂未接入 WebDAV 和 Android Autofill Service。数据格式已经与扩展统一，后续同步和系统级自动填充可以在此基础上增加。
+当前版本已接入 Android Autofill Service 和生物识别解锁入口。WebDAV 同步尚未接入，数据格式已经与扩展统一。
