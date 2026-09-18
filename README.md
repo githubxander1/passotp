@@ -45,6 +45,10 @@ OneDrive 需要单独注册 Microsoft OAuth 应用并配置客户端 ID，不能
 
 打开 `edge://extensions`，开启开发人员模式，选择“加载解压缩的扩展”，选择本目录。
 
+## Android 客户端
+
+Android 客户端位于 `android/`，可使用 Android Studio 打开该目录。它复用扩展的 PBKDF2 + AES-GCM 保险库格式，可以导入扩展导出的加密 JSON。Android 端当前为 `0.1.0`，已支持本地解锁、账号/OTP 管理、复制和加密导入导出；WebDAV 和系统级自动填充将在后续版本加入。
+
 ## 项目结构
 
 ```text
@@ -57,6 +61,8 @@ src/
     popup.js          # 本地保险库、OTP、设置和同步界面
   vendor/
     jsQR.js           # 本地二维码解码库
+android/
+  app/                # Android 原生客户端
 ```
 
 保险库和 WebDAV 配置只在本地加密保存；项目不包含服务端，也不会把主密码或 WebDAV 密码提交到仓库。
