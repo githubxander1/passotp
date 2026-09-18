@@ -1,10 +1,22 @@
 (() => {
   const state = { matches: [], activeForm: null, host: null, submitted: new WeakSet(), saveShown: new WeakSet(), autofilled: new WeakSet(), scanTimer: null };
 
-  function passwordInput(form) { return form?.querySelector('input[type="password"]'); }
+  function usable(input) {
+    if (!input || input.disabled || input.readOnly) return false;
+    const style = getComputedStyle(input);
+    return style.display !== "none" && style.visibility !== "hidden" && input.getClientRects().length > 0;
+  }
+  function passwordInput(form) { return [...(form?.querySelectorAll('input[type="password"]') || [])].find(usable) || null; }
   function usernameInput(form) {
     if (!form) return null;
-    return form.querySelector('input[autocomplete="username"], input[type="email"], input:not([type]), input[type="text"]');
+    const candidates = [...form.querySelectorAll('input[autocomplete="username"], input[type="email"], input:not([type]), input[type="text"]')].filter(usable);
+    return candidates.sort((a, b) => {
+      const score = (input) => {
+        const value = `${input.autocomplete} ${input.name} ${input.id} ${input.placeholder}`.toLowerCase();
+        return (input.autocomplete === "username" ? 100 : 0) + (/(user|account|login|email|邮箱|账号)/.test(value) ? 20 : 0);
+      };
+      return score(b) - score(a);
+    })[0] || null;
   }
   function forms() {
     const result = [...document.querySelectorAll("form")].filter((form) => passwordInput(form));
@@ -33,8 +45,10 @@
   function hideBar() { if (state.host) state.host.root.replaceChildren(); state.activeForm = null; }
   function fillForm(form, entry) {
     const user = usernameInput(form); const pass = passwordInput(form);
+    user?.focus();
     if (user && entry.username) setValue(user, entry.username);
     if (pass && entry.password) setValue(pass, entry.password);
+    pass?.dispatchEvent(new Event("blur", { bubbles: true }));
     state.autofilled.add(form); hideBar();
   }
   function showFillBar(form) {
@@ -68,7 +82,17 @@
     const dismiss = document.createElement("button"); dismiss.className = "alt"; dismiss.textContent = "忽略"; dismiss.onclick = hideBar; row.append(save, dismiss); box.append(row); root.append(box);
   }
 
-  function setValue(input, value) { const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set; setter?.call(input, value); input.dispatchEvent(new Event("input", { bubbles: true })); input.dispatchEvent(new Event("change", { bubbles: true })); }
+  function setValue(input, value) {
+    if (!input) return;
+    const prototype = Object.getPrototypeOf(input);
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set || Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    const previous = input.value;
+    setter ? setter.call(input, value) : (input.value = value);
+    // React tracks the last value separately; clear it so the synthetic input event is observed.
+    if (input._valueTracker) input._valueTracker.setValue(previous);
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true, inputType: "insertText", data: String(value) }));
+    input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+  }
   function captureCredentials(form) { return { username: usernameInput(form)?.value?.trim() || "", password: passwordInput(form)?.value || "" }; }
   function scheduleSave(form) {
     if (state.saveShown.has(form)) return;
