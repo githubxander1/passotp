@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Local Password OTP Vault",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "A local encrypted password and OTP manager with QR import and WebDAV sync.",
   "permissions": ["storage", "unlimitedStorage", "clipboardWrite", "downloads", "tabs", "activeTab"],
   "host_permissions": ["https://*/*", "http://*/*"],
   "content_scripts": [{
     "matches": ["<all_urls>"],
     "js": ["src/content.js"],
-    "run_at": "document_idle"
+    "run_at": "document_idle",
+    "all_frames": true
   }],
   "action": {
     "default_title": "Local Password OTP Vault",
