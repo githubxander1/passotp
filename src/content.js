@@ -1,5 +1,5 @@
 (() => {
-  const state = { matches: [], activeForm: null, host: null, submitted: new WeakSet(), saveShown: new WeakSet(), autofilled: new WeakSet(), scanTimer: null };
+  const state = { matches: [], activeForm: null, host: null, submitted: new WeakSet(), saveShown: new WeakSet(), saveRequested: new WeakSet(), autofilled: new WeakSet(), scanTimer: null };
 
   function usable(input) {
     if (!input || input.disabled || input.readOnly) return false;
@@ -94,16 +94,30 @@
     input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
   }
   function captureCredentials(form) { return { username: usernameInput(form)?.value?.trim() || "", password: passwordInput(form)?.value || "" }; }
-  function scheduleSave(form) {
-    if (state.saveShown.has(form)) return;
-    setTimeout(() => {
-      const { username, password } = captureCredentials(form);
-      if (!username || !password) return;
-      const existing = state.matches.find((item) => item.username === username);
-      if (existing && existing.password === password) return;
-      state.saveShown.add(form);
+  async function saveSubmittedCredentials(form) {
+    if (state.saveRequested.has(form)) return;
+    const { username, password } = captureCredentials(form);
+    if (!username || !password) return;
+    const existing = state.matches.find((item) => item.username === username);
+    if (existing && existing.password === password) return;
+    state.saveRequested.add(form);
+    const result = await send({ type: "save-login", username, password, name: document.title || location.hostname, url: location.href });
+    if (result.ok) {
+      state.matches = [...state.matches.filter((item) => item.username !== username), { username, password, name: document.title || location.hostname }];
+      showSavedBar(existing ? "登录密码已更新" : "登录信息已保存");
+    } else {
       showSaveBar(form, username, password, existing);
-    }, 600);
+    }
+  }
+  function scheduleSave(form) {
+    // The submit event is the reliable point before navigation; the timeout is only a fallback for JS login buttons.
+    saveSubmittedCredentials(form);
+    setTimeout(() => saveSubmittedCredentials(form), 80);
+  }
+  function showSavedBar(message) {
+    const { root } = createHost(); root.replaceChildren();
+    const box = document.createElement("div"); box.className = "box"; box.textContent = message;
+    root.append(box); setTimeout(hideBar, 1800);
   }
   function observeForm(form) {
     if (form.dataset.localVaultObserved) return;
