@@ -4,10 +4,10 @@
 
 ## 项目结构
 
-- `extension/`：Edge Manifest V3 扩展，当前版本 `0.11.0`
+- `extension/`：Edge Manifest V3 扩展，当前版本 `0.11.1`
 - `app/`：Android 原生客户端，当前版本 `0.2.3`
 
-当前版本：`0.11.0`
+当前版本：`0.11.1`
 
 ## 特性
 
