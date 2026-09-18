@@ -9,7 +9,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.session.set({ pendingScan: message.data }).then(() => sendResponse({ ok: true })).catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
-  if (message.type !== "get-login-matches" && message.type !== "save-login" && message.type !== "auto-sync-webdav") return;
+  if (!["get-login-matches", "save-login", "capture-login", "get-pending-login", "confirm-login", "dismiss-login", "auto-sync-webdav"].includes(message.type)) return;
   if (message.type === "auto-sync-webdav") {
     syncStoredWebdav().then((result) => sendResponse({ ok: true, ...result })).catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
@@ -51,7 +51,36 @@ async function getUnlockedVault() {
 
 async function handleLoginMessage(message, sender) {
   const pageUrl = sender.tab?.url || message.url || "";
-  const site = new URL(pageUrl).origin;
+  const site = new URL(message.url || pageUrl).origin;
+  const tabId = sender.tab?.id;
+  const pendingKey = tabId == null ? null : `pendingLogin:${tabId}`;
+  if (message.type === "get-pending-login") {
+    const stored = pendingKey ? await chrome.storage.session.get(pendingKey) : {};
+    return { pending: stored[pendingKey] || null };
+  }
+  if (message.type === "dismiss-login") {
+    if (pendingKey) await chrome.storage.session.remove(pendingKey);
+    return { dismissed: true };
+  }
+  if (message.type === "capture-login") {
+    const username = String(message.username || "").trim();
+    const password = String(message.password || "");
+    if (!username || !password) throw new Error("登录表单缺少账号或密码");
+    const { entries } = await getUnlockedVault();
+    const existing = entries.find((entry) => sameSite(entry.url, site) && entry.username === username);
+    if (existing && existing.password === password) return { alreadySaved: true };
+    const pending = { username, password, name: String(message.name || new URL(site).hostname).slice(0, 120), url: site, existing: Boolean(existing) };
+    if (pendingKey) await chrome.storage.session.set({ [pendingKey]: pending });
+    return { pending };
+  }
+  if (message.type === "confirm-login") {
+    const stored = pendingKey ? await chrome.storage.session.get(pendingKey) : {};
+    const pending = stored[pendingKey];
+    if (!pending) throw new Error("待保存的登录信息已过期");
+    const result = await saveLogin(pending);
+    if (pendingKey) await chrome.storage.session.remove(pendingKey);
+    return result;
+  }
   const { stored, key, entries } = await getUnlockedVault();
   if (message.type === "get-login-matches") {
     const matches = entries.filter((entry) => sameSite(entry.url, site)).map((entry) => ({ id: entry.id, name: entry.name, username: entry.username, password: entry.password }));
@@ -62,11 +91,20 @@ async function handleLoginMessage(message, sender) {
   if (!username || !password) throw new Error("登录表单缺少账号或密码");
   const name = String(message.name || new URL(pageUrl).hostname).slice(0, 120);
   const index = entries.findIndex((entry) => sameSite(entry.url, site) && entry.username === username);
-  const entry = { id: index >= 0 ? entries[index].id : crypto.randomUUID(), name, url: site, username, password, notes: index >= 0 ? entries[index].notes || "" : "", otp: index >= 0 ? entries[index].otp || "" : "", algorithm: index >= 0 ? entries[index].algorithm || "SHA1" : "SHA1", digits: index >= 0 ? entries[index].digits || 6 : 6, period: index >= 0 ? entries[index].period || 30 : 30 };
+  return saveLogin({ username, password, name, url: site });
+}
+
+async function saveLogin(candidate) {
+  const { key, entries } = await getUnlockedVault();
+  const site = new URL(candidate.url).origin;
+  const username = String(candidate.username || "").trim();
+  const password = String(candidate.password || "");
+  const index = entries.findIndex((entry) => sameSite(entry.url, site) && entry.username === username);
+  const entry = { id: index >= 0 ? entries[index].id : crypto.randomUUID(), name: String(candidate.name || new URL(site).hostname).slice(0, 120), url: site, username, password, notes: index >= 0 ? entries[index].notes || "" : "", otp: index >= 0 ? entries[index].otp || "" : "", algorithm: index >= 0 ? entries[index].algorithm || "SHA1" : "SHA1", digits: index >= 0 ? entries[index].digits || 6 : 6, period: index >= 0 ? entries[index].period || 30 : 30 };
   if (index >= 0) entries[index] = { ...entries[index], ...entry }; else entries.unshift(entry);
   await chrome.storage.local.set({ vault: await encryptRecord(entries, key) });
   syncStoredWebdav().catch(() => {});
-  return { saved: true };
+  return { saved: true, updated: index >= 0 };
 }
 
 async function syncStoredWebdav() {

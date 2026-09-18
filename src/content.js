@@ -78,8 +78,8 @@
     const close = document.createElement("button"); close.className = "close"; close.textContent = "×"; close.onclick = hideBar; title.append(close); box.append(title);
     const text = document.createElement("div"); text.textContent = existing ? `检测到 ${username} 的密码发生变化，是否更新？` : `检测到 ${username} 的新登录信息，是否保存？`; box.append(text);
     const row = document.createElement("div"); row.className = "row";
-    const save = document.createElement("button"); save.textContent = existing ? "更新" : "保存"; save.onclick = async () => { save.disabled = true; const result = await send({ type: "save-login", username, password, name: document.title || location.hostname, url: location.href }); if (result.ok) { box.textContent = existing ? "已更新" : "已保存"; state.matches = state.matches.filter((item) => item.username !== username); state.matches.push({ username, password, name: document.title || location.hostname }); setTimeout(hideBar, 1200); } else { save.disabled = false; text.textContent = result.error || "保存失败，请先解锁扩展"; } };
-    const dismiss = document.createElement("button"); dismiss.className = "alt"; dismiss.textContent = "忽略"; dismiss.onclick = hideBar; row.append(save, dismiss); box.append(row); root.append(box);
+    const save = document.createElement("button"); save.textContent = existing ? "更新" : "保存"; save.onclick = async () => { save.disabled = true; const result = await send({ type: "confirm-login" }); if (result.ok) { box.textContent = existing ? "已更新" : "已保存"; state.matches = state.matches.filter((item) => item.username !== username); state.matches.push({ username, password, name: document.title || location.hostname }); setTimeout(hideBar, 1200); } else { save.disabled = false; text.textContent = result.error || "保存失败，请先解锁扩展"; } };
+    const dismiss = document.createElement("button"); dismiss.className = "alt"; dismiss.textContent = "忽略"; dismiss.onclick = async () => { await send({ type: "dismiss-login" }); hideBar(); }; row.append(save, dismiss); box.append(row); root.append(box);
   }
 
   function setValue(input, value) {
@@ -101,10 +101,10 @@
     const existing = state.matches.find((item) => item.username === username);
     if (existing && existing.password === password) return;
     state.saveRequested.add(form);
-    const result = await send({ type: "save-login", username, password, name: document.title || location.hostname, url: location.href });
+    const result = await send({ type: "capture-login", username, password, name: document.title || location.hostname, url: location.href });
     if (result.ok) {
-      state.matches = [...state.matches.filter((item) => item.username !== username), { username, password, name: document.title || location.hostname }];
-      showSavedBar(existing ? "登录密码已更新" : "登录信息已保存");
+      if (result.alreadySaved) return;
+      showSaveBar(form, username, password, existing);
     } else {
       showSaveBar(form, username, password, existing);
     }
@@ -132,6 +132,8 @@
     if (result.ok) {
       state.matches = result.matches || [];
       const form = currentForm();
+      const pendingResult = await send({ type: "get-pending-login" });
+      if (pendingResult.ok && pendingResult.pending) showSaveBar(form, pendingResult.pending.username, pendingResult.pending.password, pendingResult.pending.existing);
       if (form && state.matches.length) {
         if (state.matches.length === 1 && !usernameInput(form)?.value && !passwordInput(form)?.value) setTimeout(() => fillForm(form, state.matches[0]), 250);
         else showFillBar(form);
