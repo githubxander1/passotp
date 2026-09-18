@@ -2,4 +2,6 @@ plugins { id 'com.android.application' }
 
 android { namespace 'com.xander.passotp'; compileSdk 34
     defaultConfig { applicationId 'com.xander.passotp'; minSdk 26; targetSdk 34; versionCode 3; versionName '0.2.1' }
+    signingConfigs { localDebug { storeFile file("$rootDir/debug.keystore"); storePassword 'android'; keyAlias 'androiddebugkey'; keyPassword 'android' } }
+    buildTypes { debug { signingConfig signingConfigs.localDebug } }
 }
