@@ -1,6 +1,11 @@
-# Local Password OTP Vault
+# PassOTP
 
-一个独立的 Edge Manifest V3 扩展，用于本地保存账号、密码和 TOTP。
+本地密码和 OTP 管理器，包含 Edge 扩展和 Android 客户端。两端复用同一套加密保险库格式。
+
+## 项目结构
+
+- `extension/`：Edge Manifest V3 扩展，当前版本 `0.11.0`
+- `app/`：Android 原生客户端，当前版本 `0.2.3`
 
 当前版本：`0.11.0`
 
@@ -41,28 +46,30 @@ WebDAV 保存的是已经加密的保险库，服务器不会看到明文密码�
 
 OneDrive 需要单独注册 Microsoft OAuth 应用并配置客户端 ID，不能仅通过一个按钮直接授权。当前版本会明确提示这一点，导出/导入和 WebDAV 不依赖该配置。
 
-## 加载
+## Edge 扩展
 
-打开 `edge://extensions`，开启开发人员模式，选择“加载解压缩的扩展”，选择本目录。
+打开 `edge://extensions`，开启开发人员模式，选择“加载解压缩的扩展”，选择本项目的 `extension/` 目录。
 
 ## Android 客户端
 
-Android 客户端位于 `android/`，可使用 Android Studio 打开该目录。它复用扩展的 PBKDF2 + AES-GCM 保险库格式，可以导入扩展导出的加密 JSON。Android 端当前为 `0.2.0`，已支持本地解锁、账号/OTP 管理、复制、加密导入导出、生物识别解锁入口和 Android Autofill Service；WebDAV 同步将在后续版本加入。
+Android 客户端位于 `app/`，可使用 Android Studio 打开该目录。它复用扩展的 PBKDF2 + AES-GCM 保险库格式，可以导入扩展导出的加密 JSON。Android 端当前为 `0.2.3`，已支持本地解锁、账号/OTP 管理、复制、加密导入导出、设置页、生物识别解锁入口和 Android Autofill Service；WebDAV 同步将在后续版本加入。
 
 ## 项目结构
 
 ```text
-src/
-  background.js       # WebDAV、保险库后台操作、网页截图和区域扫码
-  content.js          # 登录表单检测、填充提示、网页区域选择
-  popup/
-    popup.html        # 扩展面板
-    popup.css         # 面板样式
-    popup.js          # 本地保险库、OTP、设置和同步界面
-  vendor/
-    jsQR.js           # 本地二维码解码库
-android/
-  app/                # Android 原生客户端
+extension/
+  manifest.json       # 扩展清单
+  src/
+    background.js     # WebDAV、保险库后台操作、网页截图和区域扫码
+    content.js        # 登录表单检测、填充提示、网页区域选择
+    popup/
+      popup.html      # 扩展面板
+      popup.css        # 面板样式
+      popup.js         # 本地保险库、OTP、设置和同步界面
+    vendor/
+      jsQR.js         # 本地二维码解码库
+app/
+  app/                # Android 原生客户端模块
 ```
 
 保险库和 WebDAV 配置只在本地加密保存；项目不包含服务端，也不会把主密码或 WebDAV 密码提交到仓库。
