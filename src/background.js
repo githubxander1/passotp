@@ -88,6 +88,9 @@ async function syncStoredWebdav() {
   for (const target of targets) {
     try {
       const remote = await handleWebDav({ method: "get", url: target.url, username: target.username, password: target.password });
+      // Background sync cannot ask for the old master password. Never overwrite a remote vault
+      // encrypted with another salt; manual sync can merge it after the user confirms the old password.
+      if (remote?.data?.salt && remote.data.salt !== stored.salt) continue;
       if (remote?.data?.salt && remote.data.salt === stored.salt) {
         const remoteEntries = await decryptRecord(remote.data.vault, key);
         localEntries = [...new Map([...localEntries, ...remoteEntries].map((entry) => [entry.id, entry])).values()];
