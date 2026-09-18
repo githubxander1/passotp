@@ -1,4 +1,5 @@
 const state = { key: null, entries: [], salt: null, etag: "", scanStream: null, cropImage: null, cropRect: null, cropPoint: null, showOnlyOtp: true, showOnlyPassword: false };
+const remoteMergeKeys = new Map();
 const $ = (id) => document.getElementById(id);
 
 function bytesToB64(bytes) { return btoa(String.fromCharCode(...new Uint8Array(bytes))); }
@@ -44,8 +45,13 @@ async function importVault(file) { const data = JSON.parse(await file.text()); i
 async function syncWebdavTarget(target, packageData) {
   const remote = await chrome.runtime.sendMessage({ type: "webdav", method: "get", url: target.url, username: target.username, password: target.password });
   if (remote?.result?.data) {
-    if (remote.result.data.salt !== bytesToB64(state.salt)) throw new Error("远程保险库主密码不同");
-    const remoteEntries = await decryptWithKey(remote.result.data.vault, state.key);
+    let remoteKey = state.key;
+    if (remote.result.data.salt !== bytesToB64(state.salt)) {
+      const salt = remote.result.data.salt;
+      remoteKey = remoteMergeKeys.get(salt);
+      if (!remoteKey) { const oldMaster = prompt("远程保险库使用了另一套主密码，请输入旧主密码进行合并；不会保存主密码"); if (!oldMaster) throw new Error("已取消远程保险库合并"); remoteKey = await deriveKey(oldMaster, b64ToBytes(salt)); remoteMergeKeys.set(salt, remoteKey); }
+    }
+    const remoteEntries = await decryptWithKey(remote.result.data.vault, remoteKey);
     const merged = new Map([...state.entries, ...remoteEntries].map((entry) => [entry.id, entry]));
     state.entries = [...merged.values()];
     const encrypted = await encryptWithKey(state.entries, state.key);
